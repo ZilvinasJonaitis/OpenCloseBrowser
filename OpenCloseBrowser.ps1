@@ -62,8 +62,18 @@ function GuessPath {
     return "" # path not found
 }
 
+$startTime = Get-Date
+$updatePeriod = $UpdateInHours * 3600
+$nextUpdateCycle = 0
 
-$updateCycle = $UpdateInHours * 3600 - $WaitInSeconds
+Write-Host "Start time: $startTime"
+# Round start time to the nearest minute
+if ($startTime.Second -lt 30) {
+    $startTime = $startTime.AddSeconds(-$startTime.Second)
+} else {
+    $startTime = $startTime.AddSeconds(60 - $startTime.Second)
+}
+Write-Host "Start time (rounded): $startTime"
 
 
 switch ($Browser) {
@@ -137,9 +147,10 @@ do {
         # No active browser's instances were found; continue
     }
 
+    $nextUpdateCycle += $updatePeriod
+    $nextUpdateTime = ($startTime.AddSeconds($nextUpdateCycle)).ToString()
     # Wait until next update cycle
-    $nextUpdate = ((Get-Date).AddSeconds($updateCycle)).ToString()
-    Write-Host "Wait $UpdateInHours hour(s) for the next update at $nextUpdate..."
-    Start-Sleep -Seconds $updateCycle
+    Write-Host "Wait $UpdateInHours hour(s) for the next update at $nextUpdateTime..."
+    Start-Sleep -Seconds $updatePeriod
 
 } while ($true) # loop forever; press Ctrl+C to exit
