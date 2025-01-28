@@ -19,7 +19,7 @@ param (
 
     # Waiting time in seconds before closing the browser
     [Parameter(Mandatory=$false)]
-    [ValidateRange(1, [int]::MaxValue)]
+    [ValidateRange(10, [int]::MaxValue)]
     [int]
     $WaitInSeconds = 60,
 
