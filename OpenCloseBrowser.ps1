@@ -118,6 +118,8 @@ try {
     # No active browser's instances were found; continue
 }
 
+$pageRenderTimeout = 5 # reasonable time in seconds to fully render page in browser
+
 do {
     Write-Host "Open URL(s) in '$processName' browser"
     foreach ($item in $Url) {
@@ -125,7 +127,7 @@ do {
             try {
                 # Open URL in the browser
                 Start-Process -FilePath $defaultPath -ArgumentList $item -ErrorAction Stop
-                Start-Sleep -Seconds 1
+                Start-Sleep -Seconds $pageRenderTimeout
             } catch {
                 Write-Host "Cannot open '$processName' browser by calling $defaultPath"
                 exit
