@@ -59,22 +59,8 @@ function GuessPath {
     if (Test-Path $otherPath) {
         return $otherPath
     }
-    return "" # path not found
+    return $null # our guess failed
 }
-
-$startTime = Get-Date
-$updatePeriod = $UpdateInHours * 3600
-$nextUpdateCycle = 0
-
-Write-Host "Start time: $startTime"
-# Round start time to the nearest minute
-if ($startTime.Second -lt 30) {
-    $startTime = $startTime.AddSeconds(-$startTime.Second)
-} else {
-    $startTime = $startTime.AddSeconds(60 - $startTime.Second)
-}
-Write-Host "Start time (rounded): $startTime"
-
 
 switch ($Browser) {
     "Chrome" {
@@ -91,7 +77,7 @@ switch ($Browser) {
         $processName = "firefox"
         $defaultPath = GuessPath `
             "C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
-        if ($defaultPath -eq "") { # probably Firefox was installed from Microsoft Store
+        if ($null -eq $defaultPath) { # probably Firefox was installed from Microsoft Store
             $defaultPath = "firefox"
         }
     }
@@ -102,8 +88,8 @@ switch ($Browser) {
     }
 }
 
-if ($defaultPath -eq "") {
-    Write-Host "'$Browser' browser not found!"
+if ($null -eq $defaultPath) {
+    Write-Host "'$Browser' browser not found!" -ForegroundColor Yellow
     exit
 }
 
@@ -119,9 +105,24 @@ try {
 }
 
 $pageRenderTimeout = 5 # reasonable time in seconds to fully render page in browser
+$updateCycleCount = 1
+$updatePeriod = $UpdateInHours * 3600 # time in seconds
 
 do {
-    Write-Host "Open URL(s) in '$processName' browser"
+    Write-Host "$updateCycleCount UPDATE CYCLE" -ForegroundColor Blue
+    $updateCycleCount++
+    
+    $startTime = $beginTime = Get-Date
+    Write-Host "  Started at $($startTime.ToString())"
+    
+    $cycleDrift = $startTime.Second
+    # Round start time to the nearest minute
+    if ($cycleDrift -ge 30) {
+        $cycleDrift = $cycleDrift - 60
+    }
+    $startTime = $startTime.AddSeconds(-$cycleDrift)
+
+    Write-Host "  Open URL(s) in '$processName' browser"
     foreach ($item in $Url) {
         if ($item.Trim().Length -gt 0) {
             try {
@@ -129,19 +130,20 @@ do {
                 Start-Process -FilePath $defaultPath -ArgumentList $item -ErrorAction Stop
                 Start-Sleep -Seconds $pageRenderTimeout
             } catch {
-                Write-Host "Cannot open '$processName' browser by calling $defaultPath"
+                Write-Host "Cannot open '$processName' browser by calling $defaultPath" `
+                   -ForegroundColor Yellow
                 exit
             }
         }
     }
 
     # Wait a bit
-    Write-Host "Wait $WaitInSeconds seconds to close browser..."
+    Write-Host "  Waiting $WaitInSeconds seconds..."
     Start-Sleep -Seconds $WaitInSeconds
 
     # Close all browser's instances
     try {
-        Write-Host "Close '$processName' browser"
+        Write-Host "  Close browser"
         Get-Process -Name $processName -ErrorAction Stop | `
         Stop-Process -Force | `
         Out-Null
@@ -149,10 +151,11 @@ do {
         # No active browser's instances were found; continue
     }
 
-    $nextUpdateCycle += $updatePeriod
-    $nextUpdateTime = ($startTime.AddSeconds($nextUpdateCycle)).ToString()
-    # Wait until next update cycle
-    Write-Host "Wait $UpdateInHours hour(s) for the next update at $nextUpdateTime..."
-    Start-Sleep -Seconds $updatePeriod
+    $nextUpdateTime = ($startTime.AddSeconds($updatePeriod)).ToString()
+    $processingTime = [math]::round((Get-Date).Subtract($beginTime).TotalSeconds)
+    $nextUpdateTimeout = $updatePeriod - $processingTime - $cycleDrift
+
+    Write-Host "  Waiting $UpdateInHours hour(s) for the next cycle at $nextUpdateTime..."
+    Start-Sleep -Seconds $nextUpdateTimeout
 
 } while ($true) # loop forever; press Ctrl+C to exit
