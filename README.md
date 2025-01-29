@@ -41,7 +41,7 @@ Set-ExecutionPolicy -ExecutionPolicy Unrestricted
 ```
 9. Try out additional parameters:
 ```powershell
--UpdateInHours # set restart period in hours (default 24 hours)
+-PeriodInHours # set restart period in hours (default 24 hours)
 -Browser [Chrome|Edge|Firefox] # use another browser (if installed)
 ```
 

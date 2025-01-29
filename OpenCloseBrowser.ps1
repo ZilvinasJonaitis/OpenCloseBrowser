@@ -11,11 +11,11 @@ param (
     [String[]]
     $Url,
 
-    # Open browser period in hours
+    # Period to open browser in hours
     [Parameter(Mandatory=$false)]
     [ValidateRange(1, [int]::MaxValue)]
     [int]
-    $UpdateInHours = 24,
+    $PeriodInHours = 24,
 
     # Waiting time in seconds before closing the browser
     [Parameter(Mandatory=$false)]
@@ -105,12 +105,12 @@ try {
 }
 
 $pageRenderTimeout = 5 # reasonable time in seconds to fully render page in browser
-$updateCycleCount = 1
-$updatePeriod = $UpdateInHours * 3600 # time in seconds
+$periodInSeconds = $PeriodInHours * 3600
+$cycleCount = 1
 
 do {
-    Write-Host "$updateCycleCount UPDATE CYCLE" -ForegroundColor Blue
-    $updateCycleCount++
+    Write-Host "$cycleCount OPEN-CLOSE CYCLE" -ForegroundColor Green
+    $cycleCount++
     
     $startTime = $beginTime = Get-Date
     Write-Host "  Started at $($startTime.ToString())"
@@ -138,7 +138,7 @@ do {
     }
 
     # Wait a bit
-    Write-Host "  Waiting $WaitInSeconds seconds..."
+    Write-Host "  Wait $WaitInSeconds seconds"
     Start-Sleep -Seconds $WaitInSeconds
 
     # Close all browser's instances
@@ -151,11 +151,11 @@ do {
         # No active browser's instances were found; continue
     }
 
-    $nextUpdateTime = ($startTime.AddSeconds($updatePeriod)).ToString()
+    $nextCycleTime = ($startTime.AddSeconds($periodInSeconds)).ToString()
     $processingTime = [math]::round((Get-Date).Subtract($beginTime).TotalSeconds)
-    $nextUpdateTimeout = $updatePeriod - $processingTime - $cycleDrift
+    $nextCycleTimeout = $periodInSeconds - $processingTime - $cycleDrift
 
-    Write-Host "  Waiting $UpdateInHours hour(s) for the next cycle at $nextUpdateTime..."
-    Start-Sleep -Seconds $nextUpdateTimeout
+    Write-Host "  Wait $PeriodInHours hour(s) for the next cycle at $nextCycleTime"
+    Start-Sleep -Seconds $nextCycleTimeout
 
 } while ($true) # loop forever; press Ctrl+C to exit
