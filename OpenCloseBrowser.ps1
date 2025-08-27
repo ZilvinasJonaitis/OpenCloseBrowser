@@ -109,7 +109,7 @@ $periodInSeconds = $PeriodInHours * 3600
 $cycleCount = 1
 
 do {
-    Write-Host "$cycleCount OPEN-CLOSE CYCLE" -ForegroundColor Green
+    Write-Host "OPEN-CLOSE CYCLE $cycleCount" -ForegroundColor Green
     $cycleCount++
     
     $startTime = $beginTime = Get-Date
